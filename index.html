@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Outlook Response Tracker</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body data-theme="light">
+
+  <!-- ===================== SIGN-IN SCREEN ===================== -->
+  <div id="signin-screen" class="signin-screen">
+    <div class="signin-card">
+      <div class="signin-logo">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M2 6.5A2.5 2.5 0 0 1 4.5 4h15A2.5 2.5 0 0 1 22 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5v-11Z" stroke="white" stroke-width="1.6"/><path d="M3 7l9 6 9-6" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h1>Outlook Response Tracker</h1>
+      <p class="signin-sub">Sign in with your Microsoft account to scan your Inbox and find emails you haven't replied to yet. Read-only access — nothing is ever sent on your behalf.</p>
+      <button id="signin-btn" class="btn-primary btn-signin">
+        <svg width="18" height="18" viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+        Sign in with Microsoft
+      </button>
+      <p id="signin-error" class="signin-error"></p>
+      <p class="signin-note">Requesting permission: <code>Mail.Read</code> only.</p>
+    </div>
+  </div>
+
+  <!-- ===================== LOADING SCREEN ===================== -->
+  <div id="loading-screen" class="loading-screen hidden">
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <div id="loading-text" class="loading-text">Connecting to Outlook…</div>
+      <div class="loading-bar-track"><div id="loading-bar" class="loading-bar"></div></div>
+    </div>
+  </div>
+
+  <!-- ===================== APP SHELL ===================== -->
+  <div id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M2 6.5A2.5 2.5 0 0 1 4.5 4h15A2.5 2.5 0 0 1 22 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5v-11Z" stroke="white" stroke-width="1.6"/><path d="M3 7l9 6 9-6" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <div class="brand-title">Response Tracker</div>
+          <div class="brand-sub">Live Outlook data</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="dashboard">Dashboard</button>
+        <button class="nav-item" data-tab="analytics">Analytics</button>
+        <button class="nav-item" data-tab="settings">Settings</button>
+      </nav>
+      <div class="sidebar-account">
+        <div class="account-dot"></div>
+        <div id="account-email" class="account-email">—</div>
+      </div>
+      <button id="signout-btn" class="btn-signout">Sign out</button>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="search-wrap">
+          <input id="search-input" type="text" placeholder="Search sender or subject…" />
+        </div>
+        <div class="topbar-actions">
+          <button id="refresh-btn" class="icon-btn" title="Rescan mailbox">↻</button>
+          <button id="theme-btn" class="icon-btn" title="Toggle theme">◐</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- Dashboard tab -->
+        <section id="tab-dashboard" class="tab-panel">
+          <div class="stat-grid" id="stat-grid"></div>
+
+          <div class="panel table-panel">
+            <div class="table-toolbar">
+              <select id="filter-status">
+                <option value="all">All statuses</option>
+                <option value="awaiting">Awaiting reply</option>
+                <option value="responded">Responded</option>
+                <option value="forwarded">Forwarded</option>
+                <option value="auto-reply">Auto-reply</option>
+              </select>
+              <select id="filter-priority">
+                <option value="all">All priorities</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+              <select id="filter-category">
+                <option value="all">All categories</option>
+              </select>
+              <span id="result-count" class="result-count"></span>
+            </div>
+            <div class="table-scroll">
+              <table id="email-table">
+                <thead>
+                  <tr>
+                    <th data-sort="sender">Sender</th>
+                    <th data-sort="subject">Subject</th>
+                    <th data-sort="receivedDateTime">Received</th>
+                    <th data-sort="daysWaiting">Days waiting</th>
+                    <th data-sort="priority">Priority</th>
+                    <th>Status</th>
+                    <th>Category</th>
+                  </tr>
+                </thead>
+                <tbody id="email-tbody"></tbody>
+              </table>
+            </div>
+            <div class="table-pagination">
+              <span id="page-label"></span>
+              <div class="page-btns">
+                <button id="prev-page" class="icon-btn">‹</button>
+                <button id="next-page" class="icon-btn">›</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Analytics tab -->
+        <section id="tab-analytics" class="tab-panel hidden">
+          <div class="stat-grid" id="analytics-stat-grid"></div>
+          <div class="panel">
+            <div class="panel-title">Awaiting response, by age</div>
+            <div id="bucket-chart" class="bucket-chart"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">Status breakdown</div>
+            <div id="status-breakdown" class="status-breakdown"></div>
+          </div>
+        </section>
+
+        <!-- Settings tab -->
+        <section id="tab-settings" class="tab-panel hidden">
+          <div class="panel settings-panel">
+            <div class="panel-title">Overdue threshold</div>
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Consider an email overdue after</div>
+                <div class="setting-desc">Flags the days-waiting count in red on the dashboard</div>
+              </div>
+              <div class="range-row">
+                <input id="overdue-days" type="range" min="1" max="30" value="7" />
+                <span id="overdue-days-val">7 days</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel settings-panel">
+            <div class="panel-title">Excluded categories</div>
+            <div class="setting-row">
+              <div><div class="setting-label">Newsletters &amp; digests</div><div class="setting-desc">Detected via sender and subject patterns</div></div>
+              <label class="toggle"><input id="excl-newsletter" type="checkbox" checked /><span></span></label>
+            </div>
+            <div class="setting-row">
+              <div><div class="setting-label">Automated notifications</div><div class="setting-desc">no-reply / notifications senders</div></div>
+              <label class="toggle"><input id="excl-system" type="checkbox" checked /><span></span></label>
+            </div>
+            <div class="setting-row">
+              <div><div class="setting-label">Calendar invitations</div><div class="setting-desc">Meeting requests and updates</div></div>
+              <label class="toggle"><input id="excl-calendar" type="checkbox" checked /><span></span></label>
+            </div>
+          </div>
+
+          <div class="panel settings-panel">
+            <div class="panel-title">Scan range</div>
+            <div class="setting-row">
+              <div><div class="setting-label">How far back to scan</div><div class="setting-desc">Larger ranges take longer to fetch from Graph</div></div>
+              <select id="scan-range">
+                <option value="30">Last 30 days</option>
+                <option value="60">Last 60 days</option>
+                <option value="90" selected>Last 90 days</option>
+                <option value="180">Last 180 days</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="panel settings-panel">
+            <div class="panel-title">Appearance</div>
+            <div class="setting-row">
+              <div class="setting-label">Theme</div>
+              <div class="theme-switch">
+                <button id="theme-light-btn" class="theme-opt active">Light</button>
+                <button id="theme-dark-btn" class="theme-opt">Dark</button>
+              </div>
+            </div>
+          </div>
+
+          <button id="apply-settings-btn" class="btn-primary">Apply &amp; rescan</button>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===================== CONVERSATION DRAWER ===================== -->
+  <div id="drawer-backdrop" class="drawer-backdrop hidden"></div>
+  <aside id="drawer" class="drawer hidden">
+    <div class="drawer-header">
+      <div>
+        <div id="drawer-company" class="drawer-company"></div>
+        <div id="drawer-subject" class="drawer-subject"></div>
+      </div>
+      <button id="drawer-close" class="icon-btn">×</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </aside>
+
+  <script src="https://unpkg.com/@azure/msal-browser@3/lib/msal-browser.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
